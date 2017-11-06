@@ -1,0 +1,6 @@
+[package]
+name = "good_stv"
+version = "0.1.0"
+authors = ["Terry Bolt <bolt.terry@gmail.com>"]
+
+[dependencies]

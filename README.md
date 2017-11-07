@@ -4,6 +4,7 @@ A good stv utility.
 
 ## License
 
+```text
 good_stv - a good single transferable vote utility.
 Copyright (C) 2017 Terry Bolt
 
@@ -19,3 +20,4 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+```

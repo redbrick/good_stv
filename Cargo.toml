@@ -1,7 +1,7 @@
 [package]
 name = "good_stv"
 version = "0.1.0"
-authors = ["Terry Bolt <bolt.terry@gmail.com>"]
+authors = ["Terry Bolt <tbolt@redbrick.dcu.ie>"]
 
 [dependencies]
 clap = "2.27.1"
@@ -10,5 +10,3 @@ env_logger = "0.4.3"
 error-chain = "0.11.0"
 log = "0.3.8"
 rand = "0.3.18"
-serde = "1"
-serde_derive = "1"

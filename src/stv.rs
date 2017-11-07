@@ -30,19 +30,13 @@ type CandidateVotesMap = HashMap<Candidate, Vec<Vote>>;
 type Vote = Vec<String>;
 
 #[derive(Debug, Default, PartialEq)]
-pub struct BallotResults {
+pub struct ElectionResults {
     pub elected: HashMap<Candidate, u64>,
     pub eliminated: HashMap<Candidate, u64>,
 }
 
-impl BallotResults {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
 #[derive(Debug, Default)]
-pub struct Ballot {
+pub struct Election {
     candidates: Vec<Candidate>,
     elected: CandidateVotesMap,
     eliminated: CandidateVotesMap,
@@ -50,10 +44,10 @@ pub struct Ballot {
     votes: Vec<Vote>,
 }
 
-impl Ballot {
+impl Election {
     pub fn from_csv_file<P: AsRef<Path>>(path: P, seats: u64) -> Result<Self> {
         let file = File::open(path)?;
-        Ballot::from_reader(file, seats)
+        Election::from_reader(file, seats)
     }
 
     pub fn from_reader<R: Read>(reader: R, seats: u64) -> Result<Self> {
@@ -73,7 +67,7 @@ impl Ballot {
             votes.push(vote);
         }
 
-        Ok(Ballot {
+        Ok(Election {
             candidates: candidates,
             seats: seats,
             votes: votes,
@@ -89,7 +83,7 @@ impl Ballot {
         (self.total_votes() / (self.seats + 1)) + 1
     }
 
-    pub fn results(mut self) -> Result<BallotResults> {
+    pub fn results(mut self) -> Result<ElectionResults> {
         let mut candidate_votes = CandidateVotesMap::new();
         for candidate in &self.candidates {
             candidate_votes.insert(candidate.clone(), Vec::new());
@@ -127,7 +121,7 @@ impl Ballot {
             }
         }
 
-        Ok(BallotResults {
+        Ok(ElectionResults {
             elected: self.elected
                 .into_iter()
                 .map(|(k, v): (Candidate, Vec<Vote>)| (k, v.len() as u64))
@@ -225,7 +219,7 @@ mod tests {
         let test_csv = "head1,head2,head3\nrecord1,record2";
         let cursor = Cursor::new(test_csv);
 
-        let ballot = Ballot::from_reader(cursor, 10).unwrap();
+        let ballot = Election::from_reader(cursor, 10).unwrap();
 
         assert_eq!(
             ballot.candidates,
@@ -240,7 +234,7 @@ mod tests {
     #[test]
     fn test_quota_calculation() {
         let votes = vec![Vote::default(); 100];
-        let ballot = Ballot {
+        let ballot = Election {
             votes: votes,
             seats: 2,
             ..Default::default()
@@ -251,7 +245,7 @@ mod tests {
 
     #[test]
     fn test_ballot_results() {
-        let expected_results = BallotResults {
+        let expected_results = ElectionResults {
             elected: {
                 let mut elected = HashMap::new();
                 elected.insert("a".to_owned(), 4);
@@ -267,7 +261,7 @@ mod tests {
         };
         let test_csv = "a,b,c,d\nc,b,a\nc,b,a\nb,c\na,b\nc,b\nb,a\nc,b,a\nd,a\na,b";
         let cursor = Cursor::new(test_csv);
-        let ballot = Ballot::from_reader(cursor, 2).unwrap();
+        let ballot = Election::from_reader(cursor, 2).unwrap();
 
         let results = ballot.results().unwrap();
 

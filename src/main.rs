@@ -1,8 +1,10 @@
 extern crate csv;
+extern crate env_logger;
 #[macro_use]
 extern crate error_chain;
 #[macro_use]
-extern crate serde_derive;
+extern crate log;
+extern crate rand;
 
 mod errors {
     error_chain!{

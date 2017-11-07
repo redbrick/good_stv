@@ -106,7 +106,7 @@ impl Ballot {
             self.elected.extend(elected_this_round.clone().into_iter());
             // If there were winners this round, redistribute their surplus votes and remove them
             // from candidate_votes.
-            if elected_this_round.len() > 0 {
+            if !elected_this_round.is_empty() {
                 for (candidate, votes) in &elected_this_round {
                     let num_surplus = self.distribute_winner_excess(
                         &(candidate.clone(), votes.clone()),
@@ -156,10 +156,9 @@ impl Ballot {
         let loser = candidate_votes.iter().min_by(
             |a, b| a.1.len().cmp(&b.1.len()),
         );
-        loser.map(|(k, v)| (k.clone(), v.clone())).ok_or(
-            "Could not choose a loser."
-                .into(),
-        )
+        loser.map(|(k, v)| (k.clone(), v.clone())).ok_or_else(|| {
+            "Could not choose a loser.".into()
+        })
     }
 
     fn distribute_winner_excess(

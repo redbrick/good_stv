@@ -2,7 +2,7 @@
 
 A good stv utility.
 
-[![CircleCI](https://circleci.com/gh/redbrick/good_stv/tree/master.svg?style=svg)](https://circleci.com/gh/redbrick/good_stv/tree/master)
+[![Build Status](https://travis-ci.org/redbrick/good_stv.svg?branch=master)](https://travis-ci.org/redbrick/good_stv)
 
 ## License
 

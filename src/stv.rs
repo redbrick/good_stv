@@ -196,11 +196,8 @@ impl Election {
             if vote.len() == 1 {
                 continue;
             }
-            let new_vote = &vote[1..];
-            // Don't assign votes to people already elected or elmininated.
-            if self.elected.contains_key(&new_vote[0]) ||
-                self.eliminated.contains_key(&new_vote[0])
-            {
+            let new_vote = self.strip_inactive_candidates(vote);
+            if new_vote.is_empty() {
                 continue;
             }
             let cand = candidate_votes.get_mut(&new_vote[0]).unwrap();
@@ -219,17 +216,27 @@ impl Election {
             if vote.len() == 1 {
                 continue;
             }
-            let new_vote = &vote[1..];
-            // Don't assign votes to people already elected or elmininated.
-            if self.elected.contains_key(&new_vote[0]) ||
-                self.eliminated.contains_key(&new_vote[0])
-            {
+            let new_vote = self.strip_inactive_candidates(vote);
+            if new_vote.is_empty() {
                 continue;
             }
             let cand = candidate_votes.get_mut(&new_vote[0]).unwrap();
             cand.push(new_vote.to_vec());
         }
         candidate.1.len() as u64
+    }
+
+    fn vote_candidate_elected_or_eliminated(&self, candidate: &str) -> bool {
+        self.elected.contains_key(candidate) || self.eliminated.contains_key(candidate)
+    }
+
+    fn strip_inactive_candidates(&self, vote: &[String]) -> Vote {
+        vote.iter()
+            .filter(|candidate| {
+                !self.vote_candidate_elected_or_eliminated(candidate)
+            })
+            .cloned()
+            .collect()
     }
 }
 

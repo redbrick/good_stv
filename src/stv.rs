@@ -40,13 +40,16 @@ pub struct Election {
     candidates: Vec<Candidate>,
     elected: CandidateVotesMap,
     eliminated: CandidateVotesMap,
+    num_spoiled_votes: u64,
     seats: u64,
     votes: Vec<Vote>,
 }
 
 impl Election {
     pub fn from_csv_file<P: AsRef<Path>>(path: P, seats: u64) -> Result<Self> {
-        let file = File::open(path)?;
+        let file = File::open(&path).chain_err(|| {
+            format!("Error opening file {:?}.", path.as_ref().to_string_lossy())
+        })?;
         Election::from_reader(file, seats)
     }
 
@@ -67,12 +70,17 @@ impl Election {
             votes.push(vote);
         }
 
-        Ok(Election {
+        let mut election = Election {
             candidates: candidates,
             seats: seats,
             votes: votes,
             ..Default::default()
-        })
+        };
+        let num_spoiled_votes = election.purge_spoiled_votes();
+        info!("{} spoiled votes purged.", num_spoiled_votes);
+        election.num_spoiled_votes = num_spoiled_votes;
+
+        Ok(election)
     }
 
     pub fn total_votes(&self) -> u64 {
@@ -131,6 +139,22 @@ impl Election {
                 .map(|(k, v): (Candidate, Vec<Vote>)| (k, v.len() as u64))
                 .collect(),
         })
+    }
+
+    // A spoiled vote is a vote containing a candidate who doesn't exist.
+    fn purge_spoiled_votes(&mut self) -> u64 {
+        let before_length = self.votes.len();
+        let candidates = self.candidates.as_slice();
+        self.votes.retain(|vote| {
+            for candidate in vote {
+                if !candidates.contains(candidate) {
+                    info!("Candidate voted for but not running: {}.", candidate);
+                    return false;
+                }
+            }
+            true
+        });
+        (before_length - self.votes.len()) as u64
     }
 
     fn get_round_winners(
@@ -216,35 +240,35 @@ mod tests {
 
     #[test]
     fn test_read_csv() {
-        let test_csv = "head1,head2,head3\nrecord1,record2";
+        let test_csv = "cand1,cand2,cand3\ncand1,cand2";
         let cursor = Cursor::new(test_csv);
 
-        let ballot = Election::from_reader(cursor, 10).unwrap();
+        let election = Election::from_reader(cursor, 10).unwrap();
 
         assert_eq!(
-            ballot.candidates,
-            vec!["head1".to_owned(), "head2".to_owned(), "head3".to_owned()]
+            election.candidates,
+            vec!["cand1".to_owned(), "cand2".to_owned(), "cand3".to_owned()]
         );
         assert_eq!(
-            ballot.votes,
-            vec![vec!["record1".to_owned(), "record2".to_owned()]]
+            election.votes,
+            vec![vec!["cand1".to_owned(), "cand2".to_owned()]]
         );
     }
 
     #[test]
     fn test_quota_calculation() {
         let votes = vec![Vote::default(); 100];
-        let ballot = Election {
+        let election = Election {
             votes: votes,
             seats: 2,
             ..Default::default()
         };
 
-        assert_eq!(ballot.quota(), 34);
+        assert_eq!(election.quota(), 34);
     }
 
     #[test]
-    fn test_ballot_results() {
+    fn test_election_results() {
         let expected_results = ElectionResults {
             elected: {
                 let mut elected = HashMap::new();
@@ -261,10 +285,29 @@ mod tests {
         };
         let test_csv = "a,b,c,d\nc,b,a\nc,b,a\nb,c\na,b\nc,b\nb,a\nc,b,a\nd,a\na,b";
         let cursor = Cursor::new(test_csv);
-        let ballot = Election::from_reader(cursor, 2).unwrap();
+        let election = Election::from_reader(cursor, 2).unwrap();
 
-        let results = ballot.results().unwrap();
+        let results = election.results().unwrap();
 
+        assert_eq!(expected_results, results);
+    }
+
+    #[test]
+    fn test_spoiled_vote_removal() {
+        let expected_results = ElectionResults {
+            elected: {
+                let mut elected = HashMap::new();
+                elected.insert("a".to_owned(), 3);
+                elected
+            },
+            ..Default::default()
+        };
+        let test_csv = "a\na\na\nz\na";
+        let cursor = Cursor::new(test_csv);
+        let election = Election::from_reader(cursor, 1).unwrap();
+        assert_eq!(1, election.num_spoiled_votes);
+
+        let results = election.results().unwrap();
         assert_eq!(expected_results, results);
     }
 }

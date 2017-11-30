@@ -54,7 +54,7 @@ fn run() -> Result<(), Error> {
         .version(VERSION.unwrap_or("unknown"))
         .author("Terry Bolt <tbolt@redbrick.dcu.ie>")
         .about(
-            "A good single transferable vote utility for simple elections.",
+            "A tool for evaluating elections using Single Transferable Vote."
         )
         .arg(Arg::with_name("seats").index(1).required(true).help(
             "Number of seats to be filled.",

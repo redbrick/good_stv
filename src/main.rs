@@ -18,18 +18,10 @@ extern crate clap;
 extern crate csv;
 extern crate env_logger;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 #[macro_use]
 extern crate log;
 extern crate rand;
-
-mod errors {
-    error_chain!{
-        foreign_links {
-            Io(::std::io::Error);
-        }
-    }
-}
 
 mod stv;
 
@@ -37,17 +29,26 @@ use std::io;
 
 use clap::{App, Arg};
 
-use errors::*;
+use failure::{Error, ResultExt};
 use stv::*;
 
 const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
-quick_main!(run);
+fn main() {
+    use std::process::exit;
 
-fn run() -> Result<()> {
-    env_logger::init().chain_err(
-        || "Error initialising env_logger.",
-    )?;
+    if let Err(err) = run() {
+        debug!("{:?}", err);
+        eprintln!("{}", err);
+        for cause in err.causes().skip(1) {
+            eprintln!("Caused by: {}", cause);
+        }
+        exit(1);
+    }
+}
+
+fn run() -> Result<(), Error> {
+    env_logger::init()?;
 
     let matches = App::new("good_stv")
         .version(VERSION.unwrap_or("unknown"))
@@ -75,8 +76,8 @@ first_preference_candidate,second_preference_candidate,...
         )
         .get_matches();
 
-    let seats: u64 = matches.value_of("seats").unwrap().parse().chain_err(
-        || "Invalid input for seats.",
+    let seats: u64 = matches.value_of("seats").unwrap().parse::<u64>().context(
+        "Invalid input for seats. Must be an integer.",
     )?;
     let election = if matches.is_present("file") {
         Election::from_csv_file(matches.value_of("file").unwrap(), seats)?
@@ -84,9 +85,7 @@ first_preference_candidate,second_preference_candidate,...
         Election::from_reader(io::stdin(), seats)?
     };
 
-    let results = election.results().chain_err(
-        || "Error determining results.",
-    )?;
+    let results = election.results()?;
 
     print_results(&results);
 

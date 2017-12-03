@@ -22,12 +22,18 @@ use std::path::Path;
 use csv::ReaderBuilder;
 use rand;
 
-use errors::*;
+use failure::*;
 
 type Candidate = String;
 type CandidateVotesPair = (Candidate, Vec<Vote>);
 type CandidateVotesMap = HashMap<Candidate, Vec<Vote>>;
 type Vote = Vec<String>;
+
+#[derive(Debug, Fail)]
+pub enum ElectionError {
+    #[fail(display = "There were not enough votes to fill every seat.")]
+    NotEnoughVotesError,
+}
 
 #[derive(Debug, Default, PartialEq)]
 pub struct ElectionResults {
@@ -46,27 +52,28 @@ pub struct Election {
 }
 
 impl Election {
-    pub fn from_csv_file<P: AsRef<Path>>(path: P, seats: u64) -> Result<Self> {
-        let file = File::open(&path).chain_err(|| {
-            format!("Error opening file {:?}.", path.as_ref().to_string_lossy())
-        })?;
+    pub fn from_csv_file<P: AsRef<Path>>(path: P, seats: u64) -> Result<Self, Error> {
+        let file = File::open(&path).context(format!(
+            "Error opening file {:?}",
+            path.as_ref().to_str().unwrap()
+        ))?;
         Election::from_reader(file, seats)
     }
 
-    pub fn from_reader<R: Read>(reader: R, seats: u64) -> Result<Self> {
+    pub fn from_reader<R: Read>(reader: R, seats: u64) -> Result<Self, Error> {
         let mut csv_reader = ReaderBuilder::new()
             .has_headers(true)
             .flexible(true)
             .from_reader(reader);
         let candidates = csv_reader
             .headers()
-            .chain_err(|| "Error parsing CSV header.")?
+            .context("Error parsing CSV header.")?
             .deserialize(None)
-            .chain_err(|| "Error deserializing CSV into Candidates struct.")?;
+            .context("Error deserializing CSV into Candidates struct.")?;
 
         let mut votes = Vec::new();
         for record in csv_reader.deserialize() {
-            let vote: Vote = record.chain_err(|| "Could not deserialize record.")?;
+            let vote: Vote = record.context("Could not deserialize record.")?;
             votes.push(vote);
         }
 
@@ -91,7 +98,7 @@ impl Election {
         (self.total_votes() / (self.seats + 1)) + 1
     }
 
-    pub fn results(mut self) -> Result<ElectionResults> {
+    pub fn results(mut self) -> Result<ElectionResults, Error> {
         let mut candidate_votes = CandidateVotesMap::new();
         for candidate in &self.candidates {
             candidate_votes.insert(candidate.clone(), Vec::new());
@@ -170,12 +177,15 @@ impl Election {
         elected
     }
 
-    fn get_round_loser(&self, candidate_votes: &CandidateVotesMap) -> Result<CandidateVotesPair> {
+    fn get_round_loser(
+        &self,
+        candidate_votes: &CandidateVotesMap,
+    ) -> Result<CandidateVotesPair, Error> {
         let loser = candidate_votes.iter().min_by(
             |a, b| a.1.len().cmp(&b.1.len()),
         );
         loser.map(|(k, v)| (k.clone(), v.clone())).ok_or_else(|| {
-            "Could not choose a loser.".into()
+            ElectionError::NotEnoughVotesError.into()
         })
     }
 

@@ -4,6 +4,8 @@ A tool for evaluating elections using [Single Transferable
 Vote](https://en.wikipedia.org/wiki/Single_transferable_vote).
 
 [![Build Status](https://travis-ci.org/redbrick/good_stv.svg?branch=master)](https://travis-ci.org/redbrick/good_stv)
+[![Crates.io](https://img.shields.io/crates/v/good-stv.svg)](https://crates.io/crates/good_stv)
+[![Crates.io](https://img.shields.io/crates/l/good_stv.svg)](https://crates.io/crates/good_stv)
 
 ## Usage
 

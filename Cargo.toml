@@ -5,9 +5,11 @@ authors = ["Terry Bolt <tbolt@redbrick.dcu.ie>"]
 description = "A tool for evaluating elections using Single Transferable Vote."
 
 categories = ["command-line-interface","command-line-utilities","parsing","algorithms"]
+homepage = "https://github.com/redbrick/good_stv"
 keywords = ["redbrick","vote","cli"]
 license = "GPL-3.0"
 readme = "README.md"
+repository = "https://github.com/redbrick/good_stv"
 
 [badges]
 travis-ci = { repository = "redbrick/good_stv" }

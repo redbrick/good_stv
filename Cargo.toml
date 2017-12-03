@@ -2,6 +2,15 @@
 name = "good_stv"
 version = "0.1.0"
 authors = ["Terry Bolt <tbolt@redbrick.dcu.ie>"]
+description = "A tool for evaluating elections using Single Transferable Vote."
+
+categories = ["command-line-interface","command-line-utilities","parsing","algorithms"]
+keywords = ["redbrick","vote","cli"]
+license = "GPL-3.0"
+readme = "README.md"
+
+[badges]
+travis-ci = { repository = "redbrick/good_stv" }
 
 [dependencies]
 clap = "2.27.1"

@@ -181,12 +181,12 @@ impl Election {
         &self,
         candidate_votes: &CandidateVotesMap,
     ) -> Result<CandidateVotesPair, Error> {
-        let loser = candidate_votes.iter().min_by(
-            |a, b| a.1.len().cmp(&b.1.len()),
-        );
-        loser.map(|(k, v)| (k.clone(), v.clone())).ok_or_else(|| {
-            ElectionError::NotEnoughVotesError.into()
-        })
+        let loser = candidate_votes
+            .iter()
+            .min_by(|a, b| a.1.len().cmp(&b.1.len()));
+        loser
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .ok_or_else(|| ElectionError::NotEnoughVotesError.into())
     }
 
     fn distribute_winner_excess(
@@ -242,9 +242,7 @@ impl Election {
 
     fn strip_inactive_candidates(&self, vote: &[String]) -> Vote {
         vote.iter()
-            .filter(|candidate| {
-                !self.vote_candidate_elected_or_eliminated(candidate)
-            })
+            .filter(|candidate| !self.vote_candidate_elected_or_eliminated(candidate))
             .cloned()
             .collect()
     }

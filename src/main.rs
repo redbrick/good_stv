@@ -53,12 +53,13 @@ fn run() -> Result<(), Error> {
     let matches = App::new("good_stv")
         .version(VERSION.unwrap_or("unknown"))
         .author("Terry Bolt <tbolt@redbrick.dcu.ie>")
-        .about(
-            "A tool for evaluating elections using Single Transferable Vote."
+        .about("A tool for evaluating elections using Single Transferable Vote.")
+        .arg(
+            Arg::with_name("seats")
+                .index(1)
+                .required(true)
+                .help("Number of seats to be filled."),
         )
-        .arg(Arg::with_name("seats").index(1).required(true).help(
-            "Number of seats to be filled.",
-        ))
         .arg(
             Arg::with_name("file")
                 .short("f")
@@ -76,9 +77,11 @@ first_preference_candidate,second_preference_candidate,...
         )
         .get_matches();
 
-    let seats: u64 = matches.value_of("seats").unwrap().parse::<u64>().context(
-        "Invalid input for seats. Must be an integer.",
-    )?;
+    let seats: u64 = matches
+        .value_of("seats")
+        .unwrap()
+        .parse::<u64>()
+        .context("Invalid input for seats. Must be an integer.")?;
     let election = if matches.is_present("file") {
         Election::from_csv_file(matches.value_of("file").unwrap(), seats)?
     } else {

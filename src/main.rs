@@ -48,7 +48,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Error> {
-    env_logger::init()?;
+    env_logger::init();
 
     let matches = App::new("good_stv")
         .version(VERSION.unwrap_or("unknown"))

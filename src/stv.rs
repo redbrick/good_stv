@@ -196,11 +196,11 @@ impl Election {
     ) -> u64 {
         // Calculate how many surplus votes to distribute.
         let num_surplus = candidate.1.len() - self.quota() as usize;
-        let surplus_votes = rand::sample(
+        let surplus_votes = rand::seq::sample_iter(
             &mut rand::thread_rng(),
             candidate.1.clone().into_iter(),
             num_surplus,
-        );
+        ).unwrap();
 
         for vote in &surplus_votes {
             if vote.len() == 1 {

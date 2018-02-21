@@ -52,6 +52,20 @@ pub struct Election {
 }
 
 impl Election {
+    pub fn new(candidates: Vec<Candidate>, votes: Vec<Vote>, seats: u64) -> Result<Self, Error> {
+        let mut election = Election {
+            candidates: candidates,
+            votes: votes,
+            seats: seats,
+            ..Default::default()
+        };
+        let num_spoiled_votes = election.purge_spoiled_votes();
+        info!("{} spoiled votes purged.", num_spoiled_votes);
+        election.num_spoiled_votes = num_spoiled_votes;
+
+        Ok(election)
+    }
+
     pub fn from_csv_file<P: AsRef<Path>>(path: P, seats: u64) -> Result<Self, Error> {
         let file = File::open(&path).context(format!(
             "Error opening file {:?}",
@@ -77,17 +91,7 @@ impl Election {
             votes.push(vote);
         }
 
-        let mut election = Election {
-            candidates: candidates,
-            seats: seats,
-            votes: votes,
-            ..Default::default()
-        };
-        let num_spoiled_votes = election.purge_spoiled_votes();
-        info!("{} spoiled votes purged.", num_spoiled_votes);
-        election.num_spoiled_votes = num_spoiled_votes;
-
-        Ok(election)
+        Election::new(candidates, votes, seats)
     }
 
     pub fn total_votes(&self) -> u64 {

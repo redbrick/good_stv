@@ -14,6 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+//! Library for applying a single-transferable vote algorithm to an election, as defined in a CSV
+//! file.
+
+#![warn(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
+        trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
+        unused_qualifications)]
+
 extern crate csv;
 extern crate failure;
 #[macro_use]
@@ -33,18 +40,37 @@ type CandidateVotesPair = (Candidate, Vec<Vote>);
 type CandidateVotesMap = HashMap<Candidate, Vec<Vote>>;
 type Vote = Vec<String>;
 
-#[derive(Debug, Fail)]
+/// Enum for all the errors that might be returned from the election process.
+#[derive(Clone, Copy, Debug, Fail)]
 pub enum ElectionError {
+    /// Error thrown when there are seats left over without being filled.
     #[fail(display = "There were not enough votes to fill every seat.")]
     NotEnoughVotesError,
 }
 
+/// Results of the election, including all those elected and eliminated.
 #[derive(Debug, Default, PartialEq)]
 pub struct ElectionResults {
-    pub elected: HashMap<Candidate, u64>,
-    pub eliminated: HashMap<Candidate, u64>,
+    elected: HashMap<Candidate, u64>,
+    eliminated: HashMap<Candidate, u64>,
 }
 
+impl ElectionResults {
+    /// Map of those elected to the number of votes they received at the time of their win.
+    pub fn elected(&self) -> &HashMap<Candidate, u64> {
+        &self.elected
+    }
+
+    /// Map of those eliminated to the number of votes they received at the time of their loss.
+    pub fn eliminated(&self) -> &HashMap<Candidate, u64> {
+        &self.eliminated
+    }
+}
+
+/// Represents the process of an election.
+///
+/// `Election` is constructed with a set of candidates and votes, and is consumed when it returns
+/// the results of the election.
 #[derive(Debug, Default)]
 pub struct Election {
     candidates: Vec<Candidate>,
@@ -56,6 +82,9 @@ pub struct Election {
 }
 
 impl Election {
+    /// Manually construct an `Election` where the input data is already in memory.
+    ///
+    /// The more common way to construct an `Election` is with [`Election::from_csv_file`].
     pub fn new(candidates: Vec<Candidate>, votes: Vec<Vote>, seats: u64) -> Result<Self, Error> {
         let mut election = Election {
             candidates,
@@ -70,6 +99,9 @@ impl Election {
         Ok(election)
     }
 
+    /// Construct an `Election` given a path to a CSV file.
+    ///
+    /// This is the recommended way to use `Election`.
     pub fn from_csv_file<P: AsRef<Path>>(path: P, seats: u64) -> Result<Self, Error> {
         let file = File::open(&path).context(format!(
             "Error opening file {:?}",
@@ -78,6 +110,8 @@ impl Election {
         Election::from_reader(file, seats)
     }
 
+    /// Construct an `Election` given any implementation of [`std::io::Read`] which contains CSV
+    /// data.
     pub fn from_reader<R: Read>(reader: R, seats: u64) -> Result<Self, Error> {
         let mut csv_reader = ReaderBuilder::new()
             .has_headers(true)
@@ -98,14 +132,19 @@ impl Election {
         Election::new(candidates, votes, seats)
     }
 
+    /// Returns the total number of votes cast in the election.
     pub fn total_votes(&self) -> u64 {
         self.votes.len() as u64
     }
 
+    /// Returns the number of votes a candidate must reach to get a seat.
     pub fn quota(&self) -> u64 {
         (self.total_votes() / (self.seats + 1)) + 1
     }
 
+    /// Returns an [`ElectionResults`] struct representing the results of the election.
+    ///
+    /// Note that this method consumes the `Election`.
     pub fn results(mut self) -> Result<ElectionResults, Error> {
         let mut candidate_votes = CandidateVotesMap::new();
         for candidate in &self.candidates {

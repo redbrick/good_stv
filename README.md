@@ -1,15 +1,15 @@
 # good_stv
 
-A tool for evaluating elections using [Single Transferable
-Vote](https://en.wikipedia.org/wiki/Single_transferable_vote).
+A tool for evaluating elections using
+[Single Transferable Vote](https://en.wikipedia.org/wiki/Single_transferable_vote).
 
 [![Build Status](https://travis-ci.org/redbrick/good_stv.svg?branch=master)](https://travis-ci.org/redbrick/good_stv)
 
 ## Usage
 
 good_stv expects to receive CSV-formatted data, either on stdin or a file. The
-only required argument is a positive integer representing the number of seats
-to fill in the election. Example invocations are:
+only required argument is a positive integer representing the number of seats to
+fill in the election. Example invocations are:
 
 ```sh
 $ good_stv -f test.csv 3
@@ -23,12 +23,12 @@ $ good_stv 3 < test.csv
 
 The input data is expected to be in the following format:
 
-One (1) header line, with a list of candidates to be elected, in any order.
-This is followed by any number of body lines, each containing a list of
-candidates, in order of preference from highest to lowest, left to right,
-representing a single vote. Any candidates listed in the body who are not also
-in the header will be ignored.  Each vote does not need to include every
-candidate, although votes listing zero (0) candidates will be ignored.
+One (1) header line, with a list of candidates to be elected, in any order. This
+is followed by any number of body lines, each containing a list of candidates,
+in order of preference from highest to lowest, left to right, representing a
+single vote. Any candidates listed in the body who are not also in the header
+will be ignored. Each vote does not need to include every candidate, although
+votes listing zero (0) candidates will be ignored.
 
 #### Example
 
@@ -38,6 +38,19 @@ alice,bob
 bob,charlie,alice
 bob
 ```
+
+### Web App
+
+**Still under development**
+
+To run the web app you first need to build it with yarn.
+
+```shell
+yarn
+yarn build
+```
+
+Then run `cargo run -- --server` to start the server on `localhost:8000`
 
 ## License
 

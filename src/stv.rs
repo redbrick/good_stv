@@ -20,6 +20,7 @@ use std::io::Read;
 use std::path::Path;
 
 use csv::ReaderBuilder;
+use log;
 use rand;
 
 use failure::*;
@@ -60,7 +61,7 @@ impl Election {
             ..Default::default()
         };
         let num_spoiled_votes = election.purge_spoiled_votes();
-        info!("{} spoiled votes purged.", num_spoiled_votes);
+        log::info!("{} spoiled votes purged.", num_spoiled_votes);
         election.num_spoiled_votes = num_spoiled_votes;
 
         Ok(election)
@@ -126,7 +127,7 @@ impl Election {
                         &mut candidate_votes,
                     );
                     candidate_votes.remove(candidate);
-                    info!("{:?} redistributed from winner surplus", num_surplus);
+                    log::info!("{:?} redistributed from winner surplus", num_surplus);
                 }
             } else {
                 // If there were no winners this round, choose a loser, eliminate them, and
@@ -136,7 +137,7 @@ impl Election {
                 let num_redistributed_votes =
                     self.distribute_loser_votes(&loser, &mut candidate_votes);
                 candidate_votes.remove(&loser.0);
-                info!("{:?} redistributed from loser", num_redistributed_votes);
+                log::info!("{:?} redistributed from loser", num_redistributed_votes);
             }
         }
 
@@ -159,7 +160,7 @@ impl Election {
         self.votes.retain(|vote| {
             for candidate in vote {
                 if !candidates.contains(candidate) {
-                    info!("Candidate voted for but not running: {}.", candidate);
+                    log::info!("Candidate voted for but not running: {}.", candidate);
                     return false;
                 }
             }

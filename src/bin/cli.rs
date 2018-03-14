@@ -34,10 +34,9 @@ const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
 fn main() {
     if let Err(err) = run() {
-        debug!("{:?}", err);
-        error!("{}", err);
+        error!("{:?}", err);
         for cause in err.causes().skip(1) {
-            error!("Caused by: {}", cause);
+            error!("Caused by: {:?}", cause);
         }
         std::process::exit(1);
     }
@@ -93,11 +92,11 @@ first_preference_candidate,second_preference_candidate,...
 
 fn print_results(results: &ElectionResults) {
     println!("Elected:");
-    for elected in &results.elected {
+    for elected in results.elected() {
         println!("\t{} with {} votes.", elected.0, elected.1);
     }
     println!("\nEliminated:");
-    for eliminated in &results.eliminated {
+    for eliminated in results.eliminated() {
         println!("\t{} with {} votes.", eliminated.0, eliminated.1);
     }
 }

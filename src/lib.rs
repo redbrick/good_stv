@@ -14,15 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+extern crate csv;
+extern crate failure;
+#[macro_use]
+extern crate log;
+extern crate rand;
+
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
 use csv::ReaderBuilder;
-use log;
-use rand;
-
 use failure::*;
 
 type Candidate = String;
@@ -55,13 +58,13 @@ pub struct Election {
 impl Election {
     pub fn new(candidates: Vec<Candidate>, votes: Vec<Vote>, seats: u64) -> Result<Self, Error> {
         let mut election = Election {
-            candidates: candidates,
-            votes: votes,
-            seats: seats,
+            candidates,
+            votes,
+            seats,
             ..Default::default()
         };
         let num_spoiled_votes = election.purge_spoiled_votes();
-        log::info!("{} spoiled votes purged.", num_spoiled_votes);
+        info!("{} spoiled votes purged.", num_spoiled_votes);
         election.num_spoiled_votes = num_spoiled_votes;
 
         Ok(election)
@@ -127,7 +130,7 @@ impl Election {
                         &mut candidate_votes,
                     );
                     candidate_votes.remove(candidate);
-                    log::info!("{:?} redistributed from winner surplus", num_surplus);
+                    info!("{:?} redistributed from winner surplus", num_surplus);
                 }
             } else {
                 // If there were no winners this round, choose a loser, eliminate them, and
@@ -137,7 +140,7 @@ impl Election {
                 let num_redistributed_votes =
                     self.distribute_loser_votes(&loser, &mut candidate_votes);
                 candidate_votes.remove(&loser.0);
-                log::info!("{:?} redistributed from loser", num_redistributed_votes);
+                info!("{:?} redistributed from loser", num_redistributed_votes);
             }
         }
 
@@ -160,7 +163,7 @@ impl Election {
         self.votes.retain(|vote| {
             for candidate in vote {
                 if !candidates.contains(candidate) {
-                    log::info!("Candidate voted for but not running: {}.", candidate);
+                    info!("Candidate voted for but not running: {}.", candidate);
                     return false;
                 }
             }

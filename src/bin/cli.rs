@@ -14,48 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#![feature(plugin)]
-#![plugin(rocket_codegen)]
-#![feature(custom_attribute)]
-#![feature(use_extern_macros)]
-
 extern crate clap;
 extern crate csv;
 extern crate env_logger;
-#[macro_use]
 extern crate failure;
-#[macro_use(log)]
+extern crate good_stv;
+#[macro_use]
 extern crate log;
 extern crate rand;
-extern crate rocket;
-extern crate rocket_contrib;
-#[macro_use]
-extern crate serde_derive;
-
-mod routes;
-mod stv;
 
 use std::io;
 
-use clap::{App, Arg, ArgGroup};
-use rocket_contrib::Template;
-
+use clap::{App, Arg};
 use failure::{Error, ResultExt};
-use routes::*;
-use stv::*;
+
+use good_stv::*;
 
 const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
 fn main() {
-    use std::process::exit;
-
     if let Err(err) = run() {
-        log::debug!("{:?}", err);
-        eprintln!("{}", err);
+        debug!("{:?}", err);
+        error!("{}", err);
         for cause in err.causes().skip(1) {
-            eprintln!("Caused by: {}", cause);
+            error!("Caused by: {}", cause);
         }
-        exit(1);
+        std::process::exit(1);
     }
 }
 
@@ -68,14 +52,9 @@ fn run() -> Result<(), Error> {
         .about("A tool for evaluating elections using Single Transferable Vote.")
         .arg(
             Arg::with_name("seats")
+                .help("Number of seats to be filled.")
                 .index(1)
-                .help("Number of seats to be filled."),
-        )
-        .arg(
-            Arg::with_name("server")
-                .short("S")
-                .long("server")
-                .help("Run server for web interface"),
+                .required(true),
         )
         .arg(
             Arg::with_name("file")
@@ -92,35 +71,22 @@ first_preference_candidate,second_preference_candidate,...
 ...",
                 ),
         )
-        .group(
-            ArgGroup::with_name("vers")
-                .args(&["seats", "server"])
-                .required(true),
-        )
         .get_matches();
 
-    if matches.is_present("server") {
-        rocket::ignite()
-            .mount("/", routes![root, files])
-            .attach(Template::fairing())
-            .catch(errors![not_found])
-            .launch();
+    let seats: u64 = matches
+        .value_of("seats")
+        .unwrap()
+        .parse::<u64>()
+        .context("Invalid input for seats. Must be an integer.")?;
+    let election = if matches.is_present("file") {
+        Election::from_csv_file(matches.value_of("file").unwrap(), seats)?
     } else {
-        let seats: u64 = matches
-            .value_of("seats")
-            .unwrap()
-            .parse::<u64>()
-            .context("Invalid input for seats. Must be an integer.")?;
-        let election = if matches.is_present("file") {
-            Election::from_csv_file(matches.value_of("file").unwrap(), seats)?
-        } else {
-            Election::from_reader(io::stdin(), seats)?
-        };
+        Election::from_reader(io::stdin(), seats)?
+    };
 
-        let results = election.results()?;
+    let results = election.results()?;
 
-        print_results(&results);
-    }
+    print_results(&results);
 
     Ok(())
 }

@@ -16,36 +16,45 @@
 
 extern crate clap;
 extern crate csv;
-extern crate env_logger;
 extern crate failure;
 extern crate good_stv;
-#[macro_use]
-extern crate log;
 extern crate rand;
+#[macro_use]
+extern crate slog;
+extern crate slog_async;
+extern crate slog_term;
 
 use std::io;
 
-use clap::{App, Arg};
+use clap::{App, Arg, ArgMatches};
 use failure::{Error, ResultExt};
+use slog::Drain;
 
 use good_stv::*;
 
 const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
 fn main() {
-    if let Err(err) = run() {
-        error!("{:?}", err);
-        for cause in err.causes().skip(1) {
-            error!("Caused by: {:?}", cause);
+    let matches = parse_opts();
+    let exit_code = {
+        let logger = init_logger(matches.is_present("verbose"));
+        if let Err(err) = run(&matches) {
+            error!(logger, "{}", err);
+            eprintln!("{}", err);
+            for cause in err.causes().skip(1) {
+                error!(logger, "Caused by: {}", cause);
+                eprintln!("Caused by: {}", cause);
+            }
+            1
+        } else {
+            0
         }
-        std::process::exit(1);
-    }
+    };
+    std::process::exit(exit_code);
 }
 
-fn run() -> Result<(), Error> {
-    env_logger::init();
-
-    let matches = App::new("good_stv")
+fn parse_opts<'a>() -> ArgMatches<'a> {
+    App::new("good_stv")
         .version(VERSION.unwrap_or("unknown"))
         .author("Terry Bolt <tbolt@redbrick.dcu.ie>")
         .about("A tool for evaluating elections using Single Transferable Vote.")
@@ -54,6 +63,12 @@ fn run() -> Result<(), Error> {
                 .help("Number of seats to be filled.")
                 .index(1)
                 .required(true),
+        )
+        .arg(
+            Arg::with_name("verbose")
+                .help("Whether to print logging information.")
+                .long("verbose")
+                .short("v"),
         )
         .arg(
             Arg::with_name("file")
@@ -70,8 +85,10 @@ first_preference_candidate,second_preference_candidate,...
 ...",
                 ),
         )
-        .get_matches();
+        .get_matches()
+}
 
+fn run(matches: &ArgMatches) -> Result<(), Error> {
     let seats: u64 = matches
         .value_of("seats")
         .unwrap()
@@ -88,6 +105,17 @@ first_preference_candidate,second_preference_candidate,...
     print_results(&results);
 
     Ok(())
+}
+
+fn init_logger(verbose: bool) -> slog::Logger {
+    if verbose {
+        let decorator = slog_term::TermDecorator::new().build();
+        let drain = slog_term::FullFormat::new(decorator).build().fuse();
+        let drain = slog_async::Async::new(drain).build().fuse();
+        slog::Logger::root(drain, o!())
+    } else {
+        slog::Logger::root(slog::Discard.fuse(), o!())
+    }
 }
 
 fn print_results(results: &ElectionResults) {

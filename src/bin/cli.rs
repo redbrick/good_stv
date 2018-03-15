@@ -78,9 +78,9 @@ first_preference_candidate,second_preference_candidate,...
         .parse::<u64>()
         .context("Invalid input for seats. Must be an integer.")?;
     let election = if matches.is_present("file") {
-        Election::from_csv_file(matches.value_of("file").unwrap(), seats)?
+        Election::from_csv_file(matches.value_of("file").unwrap(), seats, None)?
     } else {
-        Election::from_reader(io::stdin(), seats)?
+        Election::from_reader(io::stdin(), seats, None)?
     };
 
     let results = election.results()?;

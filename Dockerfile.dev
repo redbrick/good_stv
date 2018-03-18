@@ -1,0 +1,8 @@
+FROM rustlang/rust:nightly
+WORKDIR /usr/src/app
+EXPOSE 8000
+VOLUME ["/usr/local/cargo"]
+RUN apt-get update && \
+    apt-get install -y  postgresql-client-common postgresql-client-9.6 && \
+    cargo install diesel_cli --no-default-features --features postgres && \
+    cargo install cargo-watch

@@ -18,6 +18,8 @@ path = "src/bin/server/main.rs"
 [dependencies]
 clap = "2.30.0"
 csv = "1.0.0-beta.5"
+diesel = { version = "1.0.0", features = ["postgres"] }
+dotenv = "0.9.0"
 env_logger = "0.5.3"
 failure = "0.1.1"
 log = "0.4.1"

@@ -1,0 +1,37 @@
+version: '3'
+services:
+  db:
+    image: postgres:9
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data/pgdata
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: good-password
+      POSTGRES_USER: good-user
+      POSTGRES_DB: good-database
+
+  web:
+    image: node:9
+    volumes:
+      - .:/usr/src/app
+    command: bash -c "yarn && yarn build --watch"
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bash docker-dev.sh
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://good-user:good-password@db/good-database
+
+volumes:
+  pgdata: {}

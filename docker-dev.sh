@@ -2,7 +2,7 @@
 
 set -e
 
-until pg_isready; do
+until pg_isready -h db; do
 	echo "."
 	sleep 1
 done

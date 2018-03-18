@@ -20,21 +20,31 @@
 #![feature(use_extern_macros)]
 
 extern crate clap;
+#[macro_use]
+extern crate diesel;
+extern crate dotenv;
 extern crate env_logger;
 extern crate failure;
 extern crate good_stv;
 #[macro_use(log)]
 extern crate log;
+extern crate r2d2;
+extern crate r2d2_diesel;
 extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate serde_derive;
 
+mod db;
 mod routes;
+pub mod models;
+pub mod schema;
 
 use clap::App;
+use dotenv::dotenv;
 use failure::*;
 use rocket_contrib::Template;
+use std::env;
 
 use routes::*;
 
@@ -52,6 +62,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Error> {
+    dotenv().ok();
     env_logger::init();
 
     let _matches = App::new("good_stv_server")
@@ -61,6 +72,9 @@ fn run() -> Result<(), Error> {
         .get_matches();
 
     rocket::ignite()
+        .manage(db::init_pool(
+            env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
+        ))
         .mount("/", routes![root, files])
         .attach(Template::fairing())
         .catch(errors![not_found])

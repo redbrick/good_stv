@@ -12,8 +12,9 @@
     "turbolinks": "^5.1.1"
   },
   "scripts": {
-    "build": "webpack",
-    "precommit": "lint-staged"
+    "build": "webpack --mode production",
+    "build:watch": "webpack --watch --mode development",
+    "precommit": "lint-staged && cargo clippy"
   },
   "lint-staged": {
     "*.js": ["eslint --fix", "git add"],

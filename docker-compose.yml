@@ -13,9 +13,10 @@ services:
 
   web:
     image: node:9
+    working_dir: /usr/src/app
     volumes:
       - .:/usr/src/app
-    command: bash -c "yarn && yarn build --watch"
+    command: bash -c "yarn && yarn build:watch"
     depends_on:
       - server
 
@@ -30,8 +31,6 @@ services:
       - .:/usr/src/app
     depends_on:
       - db
-    environment:
-      DATABASE_URL: postgres://good-user:good-password@db/good-database
 
 volumes:
   pgdata: {}

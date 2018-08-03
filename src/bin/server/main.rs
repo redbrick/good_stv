@@ -16,7 +16,6 @@
 
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
-#![feature(custom_attribute)]
 #![feature(use_extern_macros)]
 
 extern crate clap;
@@ -44,7 +43,7 @@ fn main() {
     if let Err(err) = run() {
         log::debug!("{:?}", err);
         log::error!("{}", err);
-        for cause in err.causes().skip(1) {
+        for cause in err.iter_chain().skip(1) {
             log::error!("Caused by: {}", cause);
         }
         std::process::exit(1);
@@ -63,7 +62,7 @@ fn run() -> Result<(), Error> {
     rocket::ignite()
         .mount("/", routes![root, files])
         .attach(Template::fairing())
-        .catch(errors![not_found])
+        .catch(catchers![not_found])
         .launch();
 
     Ok(())

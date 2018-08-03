@@ -41,7 +41,7 @@ pub fn files(file: PathBuf) -> Option<NamedFile> {
     NamedFile::open(Path::new("public/").join(file)).ok()
 }
 
-#[error(404)]
+#[catch(404)]
 pub fn not_found(req: &Request) -> Template {
     let mut map = HashMap::new();
     map.insert("path", req.uri().as_str());

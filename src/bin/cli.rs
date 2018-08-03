@@ -41,7 +41,7 @@ fn main() {
         if let Err(err) = run(&matches) {
             error!(logger, "{}", err);
             eprintln!("{}", err);
-            for cause in err.causes().skip(1) {
+            for cause in err.iter_chain().skip(1) {
                 error!(logger, "Caused by: {}", cause);
                 eprintln!("Caused by: {}", cause);
             }

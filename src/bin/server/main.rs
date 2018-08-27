@@ -16,13 +16,11 @@
 
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
-#![feature(use_extern_macros)]
 
 extern crate clap;
 extern crate env_logger;
 extern crate failure;
 extern crate good_stv;
-#[macro_use(log)]
 extern crate log;
 extern crate rocket;
 extern crate rocket_contrib;

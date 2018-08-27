@@ -355,7 +355,7 @@ mod tests {
     fn test_quota_calculation() {
         let votes = vec![Vote::default(); 100];
         let election = Election {
-            votes: votes,
+            votes,
             seats: 2,
             candidates: Default::default(),
             elected: Default::default(),

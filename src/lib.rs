@@ -330,7 +330,7 @@ mod tests {
         let test_csv = "cand1,cand2,cand3\ncand1,cand2";
         let cursor = Cursor::new(test_csv);
 
-        let election = Election::from_reader(cursor, 10, None).unwrap();
+        let election = Election::from_reader(cursor, 10).unwrap();
 
         assert_eq!(
             election.candidates,
@@ -375,7 +375,7 @@ mod tests {
         };
         let test_csv = "a,b,c,d\nc,b,a\nc,b,a\nb,c\na,b\nc,b\nb,a\nc,b,a\nd,a\na,b";
         let cursor = Cursor::new(test_csv);
-        let election = Election::from_reader(cursor, 2, None).unwrap();
+        let election = Election::from_reader(cursor, 2).unwrap();
 
         let results = election.results().unwrap();
 
@@ -394,7 +394,7 @@ mod tests {
         };
         let test_csv = "a\na\na\nz\na";
         let cursor = Cursor::new(test_csv);
-        let election = Election::from_reader(cursor, 1, None).unwrap();
+        let election = Election::from_reader(cursor, 1).unwrap();
         assert_eq!(1, election.num_spoiled_votes);
 
         let results = election.results().unwrap();

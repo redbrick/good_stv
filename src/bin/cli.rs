@@ -14,43 +14,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-extern crate clap;
-extern crate csv;
-extern crate failure;
-extern crate good_stv;
-extern crate rand;
-#[macro_use]
-extern crate slog;
-extern crate slog_async;
-extern crate slog_term;
-
 use std::io;
 
 use clap::{App, Arg, ArgMatches};
 use failure::{Error, ResultExt};
-use slog::Drain;
+use env_logger::{Builder, Env};
 
 use good_stv::*;
 
 const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
-fn main() {
+fn main() -> Result<(), Error> {
+    Builder::from_env(Env::default().default_filter_or("off")).init();
     let matches = parse_opts();
-    let exit_code = {
-        let logger = init_logger(matches.is_present("verbose"));
-        if let Err(err) = run(&matches) {
-            error!(logger, "{}", err);
-            eprintln!("{}", err);
-            for cause in err.iter_chain().skip(1) {
-                error!(logger, "Caused by: {}", cause);
-                eprintln!("Caused by: {}", cause);
-            }
-            1
-        } else {
-            0
-        }
+    let seats: u64 = matches
+        .value_of("seats")
+        .unwrap()
+        .parse::<u64>()
+        .context("Invalid input for seats. Must be an integer.")?;
+    let election = if matches.is_present("file") {
+        Election::from_csv_file(matches.value_of("file").unwrap(), seats)?
+    } else {
+        Election::from_reader(io::stdin(), seats)?
     };
-    std::process::exit(exit_code);
+
+    let results = election.results()?;
+
+    print_results(&results);
+
+    Ok(())
 }
 
 fn parse_opts<'a>() -> ArgMatches<'a> {
@@ -86,36 +78,6 @@ first_preference_candidate,second_preference_candidate,...
                 ),
         )
         .get_matches()
-}
-
-fn run(matches: &ArgMatches) -> Result<(), Error> {
-    let seats: u64 = matches
-        .value_of("seats")
-        .unwrap()
-        .parse::<u64>()
-        .context("Invalid input for seats. Must be an integer.")?;
-    let election = if matches.is_present("file") {
-        Election::from_csv_file(matches.value_of("file").unwrap(), seats, None)?
-    } else {
-        Election::from_reader(io::stdin(), seats, None)?
-    };
-
-    let results = election.results()?;
-
-    print_results(&results);
-
-    Ok(())
-}
-
-fn init_logger(verbose: bool) -> slog::Logger {
-    if verbose {
-        let decorator = slog_term::TermDecorator::new().build();
-        let drain = slog_term::FullFormat::new(decorator).build().fuse();
-        let drain = slog_async::Async::new(drain).build().fuse();
-        slog::Logger::root(drain, o!())
-    } else {
-        slog::Logger::root(slog::Discard.fuse(), o!())
-    }
 }
 
 fn print_results(results: &ElectionResults) {

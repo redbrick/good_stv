@@ -17,16 +17,17 @@
 //! Library for applying a single-transferable vote algorithm to an election, as defined in a CSV
 //! file.
 
-#![warn(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
-        trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
-        unused_qualifications)]
-
-extern crate csv;
-extern crate failure;
-extern crate rand;
-#[macro_use]
-pub extern crate slog;
-extern crate slog_stdlog;
+#![warn(
+    missing_docs,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unsafe_code,
+    unstable_features,
+    unused_import_braces,
+    unused_qualifications
+)]
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -35,7 +36,7 @@ use std::path::Path;
 
 use csv::ReaderBuilder;
 use failure::*;
-use slog::Drain;
+use log::*;
 
 type Candidate = String;
 type CandidateVotesPair = (Candidate, Vec<Vote>);
@@ -81,33 +82,27 @@ pub struct Election {
     num_spoiled_votes: u64,
     seats: u64,
     votes: Vec<Vote>,
-    logger: slog::Logger,
 }
 
 impl Election {
     /// Manually construct an `Election` where the input data is already in memory.
     ///
     /// The more common way to construct an `Election` is with [`Election::from_csv_file`].
-    pub fn new<L: Into<Option<slog::Logger>>>(
+    pub fn new(
         candidates: Vec<Candidate>,
         votes: Vec<Vote>,
         seats: u64,
-        logger: L,
     ) -> Result<Self, Error> {
         let mut election = Election {
             candidates,
             votes,
             seats,
-            logger: logger
-                .into()
-                .unwrap_or_else(|| slog::Logger::root(slog_stdlog::StdLog.fuse(), o!())),
             elected: Default::default(),
             eliminated: Default::default(),
             num_spoiled_votes: Default::default(),
         };
         let num_spoiled_votes = election.purge_spoiled_votes();
-        debug!(
-            election.logger,
+        info!(
             "{} spoiled votes purged.", num_spoiled_votes
         );
         election.num_spoiled_votes = num_spoiled_votes;
@@ -118,24 +113,22 @@ impl Election {
     /// Construct an `Election` given a path to a CSV file.
     ///
     /// This is the recommended way to use `Election`.
-    pub fn from_csv_file<L: Into<Option<slog::Logger>>, P: AsRef<Path>>(
+    pub fn from_csv_file<P: AsRef<Path>>(
         path: P,
         seats: u64,
-        logger: L,
     ) -> Result<Self, Error> {
         let file = File::open(&path).context(format!(
             "Error opening file {:?}",
             path.as_ref().to_str().unwrap()
         ))?;
-        Election::from_reader(file, seats, logger)
+        Election::from_reader(file, seats)
     }
 
     /// Construct an `Election` given any implementation of [`std::io::Read`] which contains CSV
     /// data.
-    pub fn from_reader<L: Into<Option<slog::Logger>>, R: Read>(
+    pub fn from_reader<R: Read>(
         reader: R,
         seats: u64,
-        logger: L,
     ) -> Result<Self, Error> {
         let mut csv_reader = ReaderBuilder::new()
             .has_headers(true)
@@ -153,7 +146,7 @@ impl Election {
             votes.push(vote);
         }
 
-        Election::new(candidates, votes, seats, logger)
+        Election::new(candidates, votes, seats)
     }
 
     /// Returns the total number of votes cast in the election.
@@ -193,8 +186,7 @@ impl Election {
                         &mut candidate_votes,
                     );
                     candidate_votes.remove(candidate);
-                    debug!(
-                        self.logger,
+                    info!(
                         "{:?} redistributed from winner surplus", num_surplus
                     );
                 }
@@ -206,19 +198,20 @@ impl Election {
                 let num_redistributed_votes =
                     self.distribute_loser_votes(&loser, &mut candidate_votes);
                 candidate_votes.remove(&loser.0);
-                debug!(
-                    self.logger,
+                info!(
                     "{:?} redistributed from loser", num_redistributed_votes
                 );
             }
         }
 
         Ok(ElectionResults {
-            elected: self.elected
+            elected: self
+                .elected
                 .into_iter()
                 .map(|(k, v): (Candidate, Vec<Vote>)| (k, v.len() as u64))
                 .collect(),
-            eliminated: self.eliminated
+            eliminated: self
+                .eliminated
                 .into_iter()
                 .map(|(k, v): (Candidate, Vec<Vote>)| (k, v.len() as u64))
                 .collect(),
@@ -229,12 +222,10 @@ impl Election {
     fn purge_spoiled_votes(&mut self) -> u64 {
         let before_length = self.votes.len();
         let candidates = self.candidates.as_slice();
-        let logger = &self.logger;
         self.votes.retain(|vote| {
             for candidate in vote {
                 if !candidates.contains(candidate) {
-                    debug!(
-                        logger,
+                    info!(
                         "Candidate voted for but not running: {}.", candidate
                     );
                     return false;
@@ -277,11 +268,11 @@ impl Election {
     ) -> u64 {
         // Calculate how many surplus votes to distribute.
         let num_surplus = candidate.1.len() - self.quota() as usize;
-        let surplus_votes = rand::seq::sample_iter(
-            &mut rand::thread_rng(),
+        let surplus_votes = rand::seq::IteratorRandom::choose_multiple(
             candidate.1.clone().into_iter(),
+            &mut rand::thread_rng(),
             num_surplus,
-        ).unwrap();
+        );
 
         for vote in &surplus_votes {
             if vote.len() == 1 {
@@ -339,7 +330,7 @@ mod tests {
         let test_csv = "cand1,cand2,cand3\ncand1,cand2";
         let cursor = Cursor::new(test_csv);
 
-        let election = Election::from_reader(cursor, 10, None).unwrap();
+        let election = Election::from_reader(cursor, 10).unwrap();
 
         assert_eq!(
             election.candidates,
@@ -361,7 +352,6 @@ mod tests {
             elected: Default::default(),
             eliminated: Default::default(),
             num_spoiled_votes: Default::default(),
-            logger: slog::Logger::root(slog::Discard, o!()),
         };
 
         assert_eq!(election.quota(), 34);
@@ -385,7 +375,7 @@ mod tests {
         };
         let test_csv = "a,b,c,d\nc,b,a\nc,b,a\nb,c\na,b\nc,b\nb,a\nc,b,a\nd,a\na,b";
         let cursor = Cursor::new(test_csv);
-        let election = Election::from_reader(cursor, 2, None).unwrap();
+        let election = Election::from_reader(cursor, 2).unwrap();
 
         let results = election.results().unwrap();
 
@@ -404,7 +394,7 @@ mod tests {
         };
         let test_csv = "a\na\na\nz\na";
         let cursor = Cursor::new(test_csv);
-        let election = Election::from_reader(cursor, 1, None).unwrap();
+        let election = Election::from_reader(cursor, 1).unwrap();
         assert_eq!(1, election.num_spoiled_votes);
 
         let results = election.results().unwrap();

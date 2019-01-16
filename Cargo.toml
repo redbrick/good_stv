@@ -3,6 +3,7 @@ name = "good_stv"
 version = "0.1.0"
 authors = ["Terry Bolt <tbolt@redbrick.dcu.ie>"]
 description = "A tool for evaluating elections using Single Transferable Vote."
+edition = "2018"
 
 [lib]
 name = "good_stv"
@@ -16,22 +17,17 @@ name = "good_stv_server"
 path = "src/bin/server/main.rs"
 
 [dependencies]
-clap = "2.30.0"
-csv = "1.0.0-beta.5"
-env_logger = "0.5.3"
-failure = "0.1.1"
-log = "0.4.1"
-rand = "0.4.2"
-rocket = "0.3.6"
-rocket_codegen = "0.3.6"
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = "1.0"
-slog = "2.1.1"
-slog-async = "2.2.0"
-slog-stdlog = "3.0.2"
-slog-term = "2.3.0"
+clap = "2.32.0"
+csv = "1.0.5"
+env_logger = "0.6.0"
+failure = "0.1.5"
+log = "0.4.6"
+rand = "0.6.4"
+rocket = "0.4.0"
+serde = "1.0.84"
+serde_derive = "1.0.84"
+serde_json = "1.0.35"
 
 [dependencies.rocket_contrib]
-version = "0.3.6"
+version = "0.4.0"
 features = ["handlebars_templates"]

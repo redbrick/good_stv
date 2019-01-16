@@ -14,54 +14,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#![feature(plugin)]
-#![plugin(rocket_codegen)]
-
-extern crate clap;
-extern crate env_logger;
-extern crate failure;
-extern crate good_stv;
-extern crate log;
-extern crate rocket;
-extern crate rocket_contrib;
-#[macro_use]
-extern crate serde_derive;
+#![feature(proc_macro_hygiene, decl_macro)]
 
 mod routes;
 
 use clap::App;
-use failure::*;
-use rocket_contrib::Template;
+use failure::Error;
+use rocket::{catchers, routes};
+use rocket_contrib::templates::Template;
 
 use routes::*;
 
 const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
-fn main() {
-    if let Err(err) = run() {
-        log::debug!("{:?}", err);
-        log::error!("{}", err);
-        for cause in err.iter_chain().skip(1) {
-            log::error!("Caused by: {}", cause);
-        }
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<(), Error> {
-    env_logger::init();
-
+fn main() -> Result<(), Error> {
     let _matches = App::new("good_stv_server")
         .version(VERSION.unwrap_or("unknown"))
         .author("Terry Bolt <tbolt@redbrick.dcu.ie>")
         .about("The good_stv web service.")
         .get_matches();
 
-    rocket::ignite()
+    Err(rocket::ignite()
         .mount("/", routes![root, files])
         .attach(Template::fairing())
-        .catch(catchers![not_found])
-        .launch();
-
-    Ok(())
+        .register(catchers![not_found])
+        .launch().into())
 }

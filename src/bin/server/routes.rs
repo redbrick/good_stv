@@ -18,9 +18,12 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::string::String;
 
-use rocket::Request;
 use rocket::response::NamedFile;
-use rocket_contrib::Template;
+use rocket::Request;
+use log::*;
+use rocket::{catch, get};
+use rocket_contrib::templates::Template;
+use serde_derive::Serialize;
 
 #[derive(Serialize)]
 struct TemplateContext {
@@ -32,6 +35,7 @@ pub fn root() -> Template {
     let context = TemplateContext {
         name: String::from("GOOD_STV"),
     };
+    error!("test");
 
     Template::render("index", &context)
 }
@@ -43,7 +47,7 @@ pub fn files(file: PathBuf) -> Option<NamedFile> {
 
 #[catch(404)]
 pub fn not_found(req: &Request) -> Template {
-    let mut map = HashMap::new();
-    map.insert("path", req.uri().as_str());
+    let mut map = HashMap::<String, String>::new();
+    map.insert("path".to_string(), req.uri().to_string());
     Template::render("error/404", &map)
 }

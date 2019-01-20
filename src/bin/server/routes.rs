@@ -14,40 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use std::string::String;
 
-use rocket::response::NamedFile;
 use rocket::Request;
-use log::*;
-use rocket::{catch, get};
-use rocket_contrib::templates::Template;
-use serde_derive::Serialize;
+use rocket::{catch};
 
-#[derive(Serialize)]
-struct TemplateContext {
-    name: String,
-}
-
-#[get("/")]
-pub fn root() -> Template {
-    let context = TemplateContext {
-        name: String::from("GOOD_STV"),
-    };
-    error!("test");
-
-    Template::render("index", &context)
-}
-
-#[get("/<file..>")]
-pub fn files(file: PathBuf) -> Option<NamedFile> {
-    NamedFile::open(Path::new("public/").join(file)).ok()
+#[catch(500)]
+pub fn internal_error() -> &'static str {
+    "Whoops! Looks like we messed up."
 }
 
 #[catch(404)]
-pub fn not_found(req: &Request) -> Template {
-    let mut map = HashMap::<String, String>::new();
-    map.insert("path".to_string(), req.uri().to_string());
-    Template::render("error/404", &map)
+pub fn not_found(req: &Request) -> String {
+    format!("Sorry, '{}' is not a valid path.", req.uri())
 }

@@ -20,8 +20,7 @@ mod routes;
 
 use clap::App;
 use failure::Error;
-use rocket::{catchers, routes};
-use rocket_contrib::templates::Template;
+use rocket::{catchers};
 
 use routes::*;
 
@@ -35,8 +34,7 @@ fn main() -> Result<(), Error> {
         .get_matches();
 
     Err(rocket::ignite()
-        .mount("/", routes![root, files])
-        .attach(Template::fairing())
-        .register(catchers![not_found])
-        .launch().into())
+        .register(catchers![not_found, internal_error])
+        .launch()
+        .into())
 }

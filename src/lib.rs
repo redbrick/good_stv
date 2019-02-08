@@ -41,7 +41,8 @@ use log::*;
 type Candidate = String;
 type CandidateVotesPair = (Candidate, Vec<Vote>);
 type CandidateVotesMap = HashMap<Candidate, Vec<Vote>>;
-type Vote = Vec<String>;
+/// List of candidate names, ordered from first preference to last preference.
+pub type Vote = Vec<String>;
 
 /// Enum for all the errors that might be returned from the election process.
 #[derive(Clone, Copy, Debug, Fail)]
@@ -88,11 +89,7 @@ impl Election {
     /// Manually construct an `Election` where the input data is already in memory.
     ///
     /// The more common way to construct an `Election` is with [`Election::from_csv_file`].
-    pub fn new(
-        candidates: Vec<Candidate>,
-        votes: Vec<Vote>,
-        seats: u64,
-    ) -> Result<Self, Error> {
+    pub fn new(candidates: Vec<Candidate>, votes: Vec<Vote>, seats: u64) -> Result<Self, Error> {
         let mut election = Election {
             candidates,
             votes,
@@ -102,9 +99,7 @@ impl Election {
             num_spoiled_votes: Default::default(),
         };
         let num_spoiled_votes = election.purge_spoiled_votes();
-        info!(
-            "{} spoiled votes purged.", num_spoiled_votes
-        );
+        info!("{} spoiled votes purged.", num_spoiled_votes);
         election.num_spoiled_votes = num_spoiled_votes;
 
         Ok(election)
@@ -113,10 +108,7 @@ impl Election {
     /// Construct an `Election` given a path to a CSV file.
     ///
     /// This is the recommended way to use `Election`.
-    pub fn from_csv_file<P: AsRef<Path>>(
-        path: P,
-        seats: u64,
-    ) -> Result<Self, Error> {
+    pub fn from_csv_file<P: AsRef<Path>>(path: P, seats: u64) -> Result<Self, Error> {
         let file = File::open(&path).context(format!(
             "Error opening file {:?}",
             path.as_ref().to_str().unwrap()
@@ -126,10 +118,7 @@ impl Election {
 
     /// Construct an `Election` given any implementation of [`std::io::Read`] which contains CSV
     /// data.
-    pub fn from_reader<R: Read>(
-        reader: R,
-        seats: u64,
-    ) -> Result<Self, Error> {
+    pub fn from_reader<R: Read>(reader: R, seats: u64) -> Result<Self, Error> {
         let mut csv_reader = ReaderBuilder::new()
             .has_headers(true)
             .flexible(true)
@@ -186,9 +175,7 @@ impl Election {
                         &mut candidate_votes,
                     );
                     candidate_votes.remove(candidate);
-                    info!(
-                        "{:?} redistributed from winner surplus", num_surplus
-                    );
+                    info!("{:?} redistributed from winner surplus", num_surplus);
                 }
             } else {
                 // If there were no winners this round, choose a loser, eliminate them, and
@@ -198,9 +185,7 @@ impl Election {
                 let num_redistributed_votes =
                     self.distribute_loser_votes(&loser, &mut candidate_votes);
                 candidate_votes.remove(&loser.0);
-                info!(
-                    "{:?} redistributed from loser", num_redistributed_votes
-                );
+                info!("{:?} redistributed from loser", num_redistributed_votes);
             }
         }
 
@@ -225,9 +210,7 @@ impl Election {
         self.votes.retain(|vote| {
             for candidate in vote {
                 if !candidates.contains(candidate) {
-                    info!(
-                        "Candidate voted for but not running: {}.", candidate
-                    );
+                    info!("Candidate voted for but not running: {}.", candidate);
                     return false;
                 }
             }

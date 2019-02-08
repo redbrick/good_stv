@@ -20,6 +20,8 @@ use chrono::{DateTime, Local};
 use rand::Rng;
 use serde_derive::*;
 
+use good_stv::Vote;
+
 const ID_LENGTH: usize = 6;
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -50,6 +52,8 @@ pub struct Poll {
     pub created_at: DateTime<Local>,
     pub in_progress: bool,
     pub candidates: Vec<Candidate>,
+    #[serde(skip)] // We don't want votes to be returned by GET /polls/<id>
+    votes: Vec<Vote>,
 }
 
 impl Poll {
@@ -63,7 +67,12 @@ impl Poll {
                 .iter()
                 .map(|candidate| Candidate::new(candidate.to_string()))
                 .collect(),
+            votes: Vec::new(),
         }
+    }
+
+    pub fn add_vote(&mut self, vote: Vote) {
+        self.votes.push(vote);
     }
 
     fn generate_id() -> String {
